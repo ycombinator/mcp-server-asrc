@@ -79,7 +79,7 @@ func postJSON(url string, payload map[string]any) ([]byte, error) {
 	}
 
 	var lastErr error
-	for attempt := range 3 {
+	for attempt := range 5 {
 		if attempt > 0 {
 			time.Sleep(time.Duration(1<<attempt) * time.Second)
 		}
