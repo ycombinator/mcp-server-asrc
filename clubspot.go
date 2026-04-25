@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"time"
 )
 
 const (
@@ -76,27 +78,39 @@ func postJSON(url string, payload map[string]any) ([]byte, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "text/plain")
-	req.Header.Set("Origin", "https://almadenswimracquetclub.theclubspot.com")
-	req.Header.Set("Referer", "https://almadenswimracquetclub.theclubspot.com/")
+	var lastErr error
+	for attempt := range 3 {
+		if attempt > 0 {
+			time.Sleep(time.Duration(1<<attempt) * time.Second)
+		}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "text/plain")
+		req.Header.Set("Origin", "https://almadenswimracquetclub.theclubspot.com")
+		req.Header.Set("Referer", "https://almadenswimracquetclub.theclubspot.com/")
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %s from %s", resp.Status, url)
-	}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lastErr = err
+			continue
+		}
 
-	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(resp.Body); err != nil {
-		return nil, err
+		body, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr != nil {
+			lastErr = readErr
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("HTTP %s from %s", resp.Status, url)
+			continue
+		}
+
+		return body, nil
 	}
-	return buf.Bytes(), nil
+	return nil, lastErr
 }
