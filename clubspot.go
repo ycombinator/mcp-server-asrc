@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -95,6 +96,7 @@ func postJSON(url string, payload map[string]any) ([]byte, error) {
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			lastErr = err
+			log.Printf("postJSON %s attempt %d: network error: %v", url, attempt+1, err)
 			continue
 		}
 
@@ -102,15 +104,25 @@ func postJSON(url string, payload map[string]any) ([]byte, error) {
 		resp.Body.Close()
 		if readErr != nil {
 			lastErr = readErr
+			log.Printf("postJSON %s attempt %d: read error: %v", url, attempt+1, readErr)
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("HTTP %s from %s", resp.Status, url)
+			log.Printf("postJSON %s attempt %d: HTTP %s, body: %s", url, attempt+1, resp.Status, truncate(body, 500))
 			continue
 		}
 
 		return body, nil
 	}
+	log.Printf("postJSON %s: all attempts exhausted, last error: %v", url, lastErr)
 	return nil, lastErr
+}
+
+func truncate(b []byte, max int) string {
+	if len(b) <= max {
+		return string(b)
+	}
+	return string(b[:max]) + "..."
 }
