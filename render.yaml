@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: asrc-tennis-mcp
+    runtime: go
+    plan: free
+    buildCommand: go build -o server .
+    startCommand: ./server
+    envVars:
+      - key: ASRC_EMAIL
+      - key: ASRC_PASSWORD
