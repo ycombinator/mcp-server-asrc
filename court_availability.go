@@ -100,6 +100,9 @@ func fetchBookings(sessionToken string, date time.Time, loc *time.Location) ([]B
 						FirstName string `json:"firstName"`
 					} `json:"participantsArray"`
 				} `json:"booked_by"`
+				TimeBlocksArray []struct {
+					TimeBlockName string `json:"time_block_name"`
+				} `json:"time_blocks_array"`
 			} `json:"options"`
 		} `json:"result"`
 	}
@@ -116,9 +119,6 @@ func fetchBookings(sessionToken string, date time.Time, loc *time.Location) ([]B
 
 	for _, court := range response.Result {
 		for _, opt := range court.Options {
-			if len(opt.BookedBy) == 0 {
-				continue
-			}
 			start, err := parseHHMM(opt.StartTime, date, loc)
 			if err != nil {
 				continue
@@ -128,18 +128,33 @@ func fetchBookings(sessionToken string, date time.Time, loc *time.Location) ([]B
 				continue
 			}
 
-			name := "Unknown"
-			if len(opt.BookedBy[0].ParticipantsArray) > 0 {
-				name = opt.BookedBy[0].ParticipantsArray[0].FirstName
+			if len(opt.BookedBy) > 0 {
+				name := "Unknown"
+				if len(opt.BookedBy[0].ParticipantsArray) > 0 {
+					name = opt.BookedBy[0].ParticipantsArray[0].FirstName
+				}
+
+				k := groupKey{name, court.CourtObject.Name}
+				groups[k] = append(groups[k], rawBooking{
+					court:     court.CourtObject.Name,
+					bookedBy:  name,
+					startTime: start,
+					endTime:   end,
+				})
 			}
 
-			k := groupKey{name, court.CourtObject.Name}
-			groups[k] = append(groups[k], rawBooking{
-				court:     court.CourtObject.Name,
-				bookedBy:  name,
-				startTime: start,
-				endTime:   end,
-			})
+			for _, tb := range opt.TimeBlocksArray {
+				if tb.TimeBlockName == "" {
+					continue
+				}
+				k := groupKey{tb.TimeBlockName, court.CourtObject.Name}
+				groups[k] = append(groups[k], rawBooking{
+					court:     court.CourtObject.Name,
+					bookedBy:  tb.TimeBlockName,
+					startTime: start,
+					endTime:   end,
+				})
+			}
 		}
 	}
 
