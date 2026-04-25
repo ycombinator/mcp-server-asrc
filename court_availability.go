@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"time"
@@ -50,14 +51,29 @@ func handleCheckAvailability(ctx context.Context, request mcp.CallToolRequest, e
 		return mcp.NewToolResultError("invalid date format — use YYYY-MM-DD (e.g. 2026-04-24)"), nil
 	}
 
-	sessionToken, err := login(email, password)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("login failed: %v", err)), nil
-	}
+	var bookings []Booking
+	var lastErr error
+	for attempt := range 3 {
+		sessionToken, err := login(email, password)
+		if err != nil {
+			if attempt < 2 {
+				log.Printf("login attempt %d failed: %v, retrying", attempt+1, err)
+				continue
+			}
+			return mcp.NewToolResultError(fmt.Sprintf("login failed: %v", err)), nil
+		}
 
-	bookings, err := fetchBookings(sessionToken, targetDate, loc)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to fetch bookings: %v", err)), nil
+		bookings, err = fetchBookings(sessionToken, targetDate, loc)
+		if err != nil {
+			lastErr = err
+			log.Printf("fetchBookings attempt %d failed: %v, retrying with fresh login", attempt+1, err)
+			continue
+		}
+		lastErr = nil
+		break
+	}
+	if lastErr != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to fetch bookings: %v", lastErr)), nil
 	}
 
 	if len(bookings) == 0 {

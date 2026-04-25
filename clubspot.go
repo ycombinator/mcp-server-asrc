@@ -109,8 +109,11 @@ func postJSON(url string, payload map[string]any) ([]byte, error) {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("HTTP %s from %s", resp.Status, url)
+			lastErr = fmt.Errorf("HTTP %s from %s: %s", resp.Status, url, truncate(body, 200))
 			log.Printf("postJSON %s attempt %d: HTTP %s, body: %s", url, attempt+1, resp.Status, truncate(body, 500))
+			if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+				return nil, lastErr
+			}
 			continue
 		}
 
