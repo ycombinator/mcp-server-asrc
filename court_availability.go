@@ -27,13 +27,13 @@ type Booking struct {
 	BookedBy  string `json:"booked_by"`
 }
 
-func makeCheckAvailabilityHandler(email, password string) server.ToolHandlerFunc {
+func makeCheckAvailabilityHandler(sm *sessionManager) server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return handleCheckAvailability(ctx, request, email, password)
+		return handleCheckAvailability(ctx, request, sm)
 	}
 }
 
-func handleCheckAvailability(ctx context.Context, request mcp.CallToolRequest, email, password string) (*mcp.CallToolResult, error) {
+func handleCheckAvailability(ctx context.Context, request mcp.CallToolRequest, sm *sessionManager) (*mcp.CallToolResult, error) {
 	args, _ := request.Params.Arguments.(map[string]any)
 	dateStr, _ := args["date"].(string)
 
@@ -54,19 +54,20 @@ func handleCheckAvailability(ctx context.Context, request mcp.CallToolRequest, e
 	var bookings []Booking
 	var lastErr error
 	for attempt := range 3 {
-		sessionToken, err := login(email, password)
+		token, err := sm.getToken()
 		if err != nil {
 			if attempt < 2 {
-				log.Printf("login attempt %d failed: %v, retrying", attempt+1, err)
+				log.Printf("getToken attempt %d failed: %v, retrying", attempt+1, err)
 				continue
 			}
 			return mcp.NewToolResultError(fmt.Sprintf("login failed: %v", err)), nil
 		}
 
-		bookings, err = fetchBookings(sessionToken, targetDate, loc)
+		bookings, err = fetchBookings(token, targetDate, loc)
 		if err != nil {
 			lastErr = err
-			log.Printf("fetchBookings attempt %d failed: %v, retrying with fresh login", attempt+1, err)
+			log.Printf("fetchBookings attempt %d failed: %v, invalidating token and retrying", attempt+1, err)
+			sm.invalidate(token)
 			continue
 		}
 		lastErr = nil

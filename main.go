@@ -20,6 +20,8 @@ func main() {
 		log.Fatal("ASRC_EMAIL and ASRC_PASSWORD environment variables are required")
 	}
 
+	sm := newSessionManager(asrcEmail, asrcPassword)
+
 	s.AddTool(
 		mcp.NewTool("check_court_availability",
 			mcp.WithDescription("Check tennis court availability and bookings at Almaden Swim & Racquet Club (ASRC) for a given date. Returns all current bookings showing which courts are reserved, the time slots, and who booked them. Use this to find open courts or check existing reservations."),
@@ -29,7 +31,7 @@ func main() {
 			mcp.WithDestructiveHintAnnotation(false),
 			mcp.WithOpenWorldHintAnnotation(true),
 		),
-		makeCheckAvailabilityHandler(asrcEmail, asrcPassword),
+		makeCheckAvailabilityHandler(sm),
 	)
 
 	s.AddTool(
