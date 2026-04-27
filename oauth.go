@@ -11,10 +11,11 @@ import (
 	"time"
 )
 
-//go:embed templates/login.html
-var loginFS embed.FS
+//go:embed templates/login.html templates/success.html
+var templateFS embed.FS
 
-var loginTmpl = template.Must(template.ParseFS(loginFS, "templates/login.html"))
+var loginTmpl = template.Must(template.ParseFS(templateFS, "templates/login.html"))
+var successTmpl = template.Must(template.ParseFS(templateFS, "templates/success.html"))
 
 type clubConfig struct {
 	Name    string
@@ -201,7 +202,12 @@ func (o *oauthServer) processLogin(w http.ResponseWriter, r *http.Request) {
 	if state != "" {
 		location += "&state=" + state
 	}
-	http.Redirect(w, r, location, http.StatusFound)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	successTmpl.Execute(w, struct {
+		ClubName    string
+		RedirectURL string
+	}{o.club.Name, location})
 }
 
 func (o *oauthServer) handleToken(w http.ResponseWriter, r *http.Request) {

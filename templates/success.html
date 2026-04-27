@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signed In — {{.ClubName}}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --court:  #180a04;
+      --panel:  rgba(32, 14, 6, 0.85);
+      --border: rgba(194, 98, 45, 0.3);
+      --accent: #c9e52a;
+      --glow:   #f97316;
+      --fg:     #faf5ee;
+      --mid:    rgba(250, 245, 238, 0.72);
+      --dim:    rgba(250, 245, 238, 0.50);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--court);
+      color: var(--fg);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 40px;
+      background: rgba(20, 8, 3, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.05em;
+      letter-spacing: -0.01em;
+      text-decoration: none;
+      color: var(--accent);
+    }
+
+    .nav-logo svg {
+      vertical-align: middle;
+    }
+
+    .success-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px 40px;
+      width: 100%;
+      max-width: 420px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      text-align: center;
+    }
+
+    .check {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      background: rgba(201, 229, 42, 0.12);
+      border: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .check svg {
+      stroke: var(--accent);
+    }
+
+    .success-title {
+      font-size: 1.4em;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      color: var(--fg);
+    }
+
+    .success-hint {
+      font-size: 0.92em;
+      color: var(--mid);
+      margin-bottom: 28px;
+    }
+
+    .continue-link {
+      display: inline-block;
+      font-size: 0.88em;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .continue-link:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.82em;
+      color: var(--dim);
+    }
+
+    @media (max-width: 480px) {
+      .success-card {
+        padding: 36px 24px 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="https://tserve-labs.com" class="nav-logo" target="_blank">
+      <svg width="22" height="22" viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="1" y1="5" x2="21" y2="5" stroke="white" stroke-width="4.7" stroke-linecap="round"/>
+        <line x1="11" y1="5" x2="11" y2="22" stroke="white" stroke-width="4.7" stroke-linecap="round"/>
+        <circle cx="9" cy="8" r="7" fill="#180a04"/>
+        <circle cx="9" cy="8" r="7" stroke="#c9e52a" stroke-width="1.3" fill="none"/>
+        <path d="M2 6 C10 0 8 16 16 10" stroke="#c9e52a" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+      </svg>
+      TServe Labs
+    </a>
+  </nav>
+
+  <div class="success-card">
+    <div class="check">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h1 class="success-title">You're signed in</h1>
+    <p class="success-hint">Redirecting you back to the app...</p>
+    <a class="continue-link" href="{{.RedirectURL}}">Click here if not redirected</a>
+  </div>
+
+  <footer>&copy; 2026 TServe Labs</footer>
+
+  <script>
+    setTimeout(function() {
+      window.location.href = "{{.RedirectURL}}";
+    }, 1500);
+  </script>
+</body>
+</html>
