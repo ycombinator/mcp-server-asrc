@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -19,52 +18,6 @@ const (
 	clubID         = "Gh2Ho6cZZu"
 	timezone       = "America/Los_Angeles"
 )
-
-type sessionManager struct {
-	mu       sync.Mutex
-	email    string
-	password string
-	token    string
-}
-
-func newSessionManager(email, password string) *sessionManager {
-	return &sessionManager{email: email, password: password}
-}
-
-func (sm *sessionManager) getToken() (string, error) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-
-	if sm.token != "" {
-		return sm.token, nil
-	}
-	return sm.refreshLocked()
-}
-
-func (sm *sessionManager) refreshToken() (string, error) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	return sm.refreshLocked()
-}
-
-func (sm *sessionManager) refreshLocked() (string, error) {
-	log.Printf("sessionManager: logging in as %s", sm.email)
-	token, err := login(sm.email, sm.password)
-	if err != nil {
-		sm.token = ""
-		return "", err
-	}
-	sm.token = token
-	return token, nil
-}
-
-func (sm *sessionManager) invalidate(badToken string) {
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	if sm.token == badToken {
-		sm.token = ""
-	}
-}
 
 func login(email, password string) (string, error) {
 	username, err := resolveUsername(email)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -9,18 +10,26 @@ import (
 )
 
 func main() {
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
+	store := newTokenStore()
+	oauth := &oauthServer{
+		baseURL: baseURL,
+		store:   store,
+		club: clubConfig{
+			Name:    "Almaden Swim & Racquet Club",
+			Short:   "ASRC",
+			Website: "asrc.org",
+		},
+	}
+
 	s := server.NewMCPServer(
 		"asrc-tennis",
 		"1.0.0",
 	)
-
-	asrcEmail := os.Getenv("ASRC_EMAIL")
-	asrcPassword := os.Getenv("ASRC_PASSWORD")
-	if asrcEmail == "" || asrcPassword == "" {
-		log.Fatal("ASRC_EMAIL and ASRC_PASSWORD environment variables are required")
-	}
-
-	sm := newSessionManager(asrcEmail, asrcPassword)
 
 	s.AddTool(
 		mcp.NewTool("check_court_availability",
@@ -31,7 +40,7 @@ func main() {
 			mcp.WithDestructiveHintAnnotation(false),
 			mcp.WithOpenWorldHintAnnotation(true),
 		),
-		makeCheckAvailabilityHandler(sm),
+		handleCheckAvailability,
 	)
 
 	s.AddTool(
@@ -46,14 +55,23 @@ func main() {
 		handleWebsiteInfo,
 	)
 
+	mcpHandler := server.NewStreamableHTTPServer(s)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/.well-known/oauth-protected-resource", oauth.handleProtectedResourceMetadata)
+	mux.HandleFunc("/.well-known/oauth-authorization-server", oauth.handleAuthServerMetadata)
+	mux.HandleFunc("/oauth/authorize", oauth.handleAuthorize)
+	mux.HandleFunc("/oauth/token", oauth.handleToken)
+	mux.HandleFunc("/oauth/register", oauth.handleRegister)
+	mux.Handle("/mcp", oauth.authRequired(mcpHandler))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	httpServer := server.NewStreamableHTTPServer(s)
 	log.Printf("ASRC Tennis MCP server listening on :%s", port)
-	if err := httpServer.Start(":" + port); err != nil {
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
 }

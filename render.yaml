@@ -6,7 +6,5 @@ services:
     buildCommand: go build -o server .
     startCommand: ./server
     envVars:
-      - key: ASRC_EMAIL
-        sync: false
-      - key: ASRC_PASSWORD
-        sync: false
+      - key: BASE_URL
+        value: https://asrc-tennis-mcp.onrender.com
