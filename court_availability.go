@@ -19,10 +19,11 @@ var courtIDs = []string{
 var courtTypeIDs = []string{"iB7UPulFKi", "03yM1ht69n", "n2SZQ0kS5x"}
 
 type Booking struct {
-	Court     string `json:"court"`
-	StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
-	BookedBy  string `json:"booked_by"`
+	Court         string `json:"court"`
+	StartTime     string `json:"start_time"`
+	EndTime       string `json:"end_time"`
+	BookedBy      string `json:"booked_by"`
+	ReservationID string `json:"reservation_id,omitempty"`
 }
 
 func handleCheckAvailability(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -104,10 +105,10 @@ func fetchBookings(sessionToken string, date time.Time, loc *time.Location) ([]B
 	}
 
 	type rawBooking struct {
-		court, bookedBy    string
-		startTime, endTime time.Time
+		court, bookedBy, reservationID string
+		startTime, endTime             time.Time
 	}
-	type groupKey struct{ bookedBy, court string }
+	type groupKey struct{ reservationID, bookedBy, court string }
 	groups := make(map[groupKey][]rawBooking)
 
 	for _, court := range response.Result {
@@ -126,13 +127,15 @@ func fetchBookings(sessionToken string, date time.Time, loc *time.Location) ([]B
 				if len(opt.BookedBy[0].ParticipantsArray) > 0 {
 					name = opt.BookedBy[0].ParticipantsArray[0].FirstName
 				}
+				resID := opt.BookedBy[0].ObjectID
 
-				k := groupKey{name, court.CourtObject.Name}
+				k := groupKey{resID, name, court.CourtObject.Name}
 				groups[k] = append(groups[k], rawBooking{
-					court:     court.CourtObject.Name,
-					bookedBy:  name,
-					startTime: start,
-					endTime:   end,
+					court:         court.CourtObject.Name,
+					bookedBy:      name,
+					reservationID: resID,
+					startTime:     start,
+					endTime:       end,
 				})
 			}
 
@@ -140,7 +143,7 @@ func fetchBookings(sessionToken string, date time.Time, loc *time.Location) ([]B
 				if tb.TimeBlockName == "" {
 					continue
 				}
-				k := groupKey{tb.TimeBlockName, court.CourtObject.Name}
+				k := groupKey{"", tb.TimeBlockName, court.CourtObject.Name}
 				groups[k] = append(groups[k], rawBooking{
 					court:     court.CourtObject.Name,
 					bookedBy:  tb.TimeBlockName,
@@ -164,19 +167,21 @@ func fetchBookings(sessionToken string, date time.Time, loc *time.Location) ([]B
 				}
 			} else {
 				bookings = append(bookings, Booking{
-					Court:     cur.court,
-					StartTime: cur.startTime.Format("3:04 PM"),
-					EndTime:   cur.endTime.Format("3:04 PM"),
-					BookedBy:  cur.bookedBy,
+					Court:         cur.court,
+					StartTime:     cur.startTime.Format("3:04 PM"),
+					EndTime:       cur.endTime.Format("3:04 PM"),
+					BookedBy:      cur.bookedBy,
+					ReservationID: cur.reservationID,
 				})
 				cur = next
 			}
 		}
 		bookings = append(bookings, Booking{
-			Court:     cur.court,
-			StartTime: cur.startTime.Format("3:04 PM"),
-			EndTime:   cur.endTime.Format("3:04 PM"),
-			BookedBy:  cur.bookedBy,
+			Court:         cur.court,
+			StartTime:     cur.startTime.Format("3:04 PM"),
+			EndTime:       cur.endTime.Format("3:04 PM"),
+			BookedBy:      cur.bookedBy,
+			ReservationID: cur.reservationID,
 		})
 	}
 

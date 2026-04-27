@@ -44,6 +44,18 @@ func main() {
 	)
 
 	s.AddTool(
+		mcp.NewTool("cancel_reservation",
+			mcp.WithDescription("Cancel a court reservation at Almaden Swim & Racquet Club (ASRC). Requires the reservation_id, which can be obtained from the check_court_availability tool. Only the member who made the reservation can cancel it."),
+			mcp.WithString("reservation_id", mcp.Required(), mcp.Description("The reservation ID to cancel (from check_court_availability results)")),
+			mcp.WithTitleAnnotation("Cancel ASRC Court Reservation"),
+			mcp.WithReadOnlyHintAnnotation(false),
+			mcp.WithDestructiveHintAnnotation(true),
+			mcp.WithOpenWorldHintAnnotation(true),
+		),
+		handleCancelReservation,
+	)
+
+	s.AddTool(
 		mcp.NewTool("lookup_website_info",
 			mcp.WithDescription("Look up information from the Almaden Swim & Racquet Club (ASRC) website (asrc.org). Use this to answer questions about the club such as facility hours, membership, tennis programs, swim programs, pool rules, fitness center, pickleball, events, contact info, and more."),
 			mcp.WithString("query", mcp.Required(), mcp.Description("The question or topic to look up, e.g. 'what are the pool hours' or 'tennis lesson prices'")),
