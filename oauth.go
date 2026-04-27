@@ -202,12 +202,7 @@ func (o *oauthServer) processLogin(w http.ResponseWriter, r *http.Request) {
 	if state != "" {
 		location += "&state=" + state
 	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	successTmpl.Execute(w, struct {
-		ClubName    string
-		RedirectURL string
-	}{o.club.Name, location})
+	http.Redirect(w, r, location, http.StatusFound)
 }
 
 func (o *oauthServer) handleToken(w http.ResponseWriter, r *http.Request) {
